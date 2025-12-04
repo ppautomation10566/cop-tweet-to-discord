@@ -1,6 +1,7 @@
 import os
 import requests
 import time
+import re
 from dotenv import load_dotenv
 
 # Load environment variables from .env (for local development)
