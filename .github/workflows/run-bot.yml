@@ -1,0 +1,42 @@
+name: Run X → Discord Bot
+
+on:
+  schedule:
+    # Run at 6 AM and 6 PM Eastern (convert to UTC)
+    - cron: "0 11,23 * * *"  # 6 AM & 6 PM EST
+    - cron: "0 10,22 * * *"  # 6 AM & 6 PM EDT
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Restore last_seen cache
+        uses: actions/cache@v3
+        with:
+          path: last_seen.txt
+          key: last-seen-cache
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run bot
+        env:
+          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+          X_USER_ID: ${{ secrets.X_USER_ID }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: python app.py
+
+      - name: Save last_seen cache
+        uses: actions/cache@v3
+        with:
+          path: last_seen.txt
+          key: last-seen-cache
