@@ -57,9 +57,10 @@ def format_tweet(tweet):
 
 def post_to_discord(text, url=None):
     """Send a message to Discord via webhook."""
-    for tweet in tweets:
-        message = format_tweet(tweet)
-        requests.post(DISCORD_WEBHOOK, json={"content": message})
+
+    message = url if url else text
+
+    requests.post(DISCORD_WEBHOOK, json={"content": message})
 
 
 def main():
@@ -77,8 +78,10 @@ def main():
 
         # Filter by keywords
         if REGEX.search(text):
-            post_to_discord(text, f"https://x.com/{USER_ID}/status/{tid}")
+            expanded = format_tweet(tweet)
+            post_to_discord(expanded, f"https://x.com/{USER_ID}/status/{tid}")
             set_last_seen(tid)
+
 
 if __name__ == "__main__":
     main()
