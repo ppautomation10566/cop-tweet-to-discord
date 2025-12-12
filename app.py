@@ -12,6 +12,10 @@ BEARER = os.getenv("X_BEARER_TOKEN")
 DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK")
 USER_ID = os.getenv("X_USER_ID")  # numeric ID of target account
 
+if not all([BEARER, DISCORD_WEBHOOK, USER_ID]):
+    raise RuntimeError("Missing required environment variables")
+
+
 # Keywords/regex filter
 KEYWORDS = ["leaf", "cardboard", "garbage"]
 REGEX = re.compile("|".join(KEYWORDS), re.IGNORECASE)
@@ -55,13 +59,11 @@ def format_tweet(tweet):
         return tweet["entities"]["urls"][0]["expanded_url"]
     return tweet["text"]
 
-def post_to_discord(text, url=None):
+def post_to_discord(message):
     """Send a message to Discord via webhook."""
-
-    message = url if url else text
-
-    requests.post(DISCORD_WEBHOOK, json={"content": message})
-
+    r = requests.post(DISCORD_WEBHOOK, json={"content": message})
+    if r.status_code >= 400:
+        print(f"Discord post failed: {r.status_code} {r.text}", flush=True)
 
 def main():
     """Main function: fetch tweets, filter, and post to Discord."""
@@ -69,18 +71,20 @@ def main():
     tweets = get_tweets()
 
     for tweet in reversed(tweets):  # oldest first
-        tid = tweet["id"]
-        text = tweet["text"]
+        tid = tweet.get("id")
+        text = tweet.get("text", "")
 
         # Skip already-seen tweets
-        if last_seen and tid <= last_seen:
+        if last_seen and int(tid) <= int(last_seen):
             continue
 
         # Filter by keywords
         if REGEX.search(text):
             expanded = format_tweet(tweet)
-            post_to_discord(expanded, f"https://x.com/{USER_ID}/status/{tid}")
-            set_last_seen(tid)
+            post_to_discord(expanded)
+            print(f"Updating last seen to {tid}", flush=True)
+            set_last_seen(tid)   # update cache after posting
+
 
 
 if __name__ == "__main__":
