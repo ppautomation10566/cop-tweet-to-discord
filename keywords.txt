@@ -1,0 +1,4 @@
+leaf
+cardboard
+garbage
+bulk
